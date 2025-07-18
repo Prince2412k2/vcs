@@ -1,0 +1,21 @@
+[project]
+name = "vcs"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.3.1",
+]
+
+
+[project.scripts]
+vcs = "vcs.cli:main"
+
+[dependency-groups]
+dev = [
+    "vcs",
+]
+
+[tool.uv.sources]
+vcs = { workspace = true }
