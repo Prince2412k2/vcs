@@ -1,7 +1,5 @@
 import os
 import hashlib
-from os.path import exists
-from typing import Optional
 from collections import namedtuple
 
 VCS_DIR = ".vcs"
@@ -43,7 +41,7 @@ def _get_ref_internal(ref, deref):
         with open(ref_path) as f:
             value = f.read().strip()
     symbolic = bool(value) and value.startswith("ref:")
-    if symbolic and value:
+    if symbolic:
         value = value.split(":", 1)[1].strip()
         if deref:
             return _get_ref_internal(value, deref=True)
@@ -69,13 +67,14 @@ def hash_object(data: bytes, type_="blob") -> str:
     return oid
 
 
-def get_object(oid: str, expected: Optional[str] = "blob") -> bytes:
+def get_object(oid: str, expected="blob") -> bytes:
     """getting a object from repo"""
     with open(f"{VCS_DIR}/objects/{oid}", "rb") as f:
         obj = f.read()
     type_, _, content = obj.partition(b"\x00")
     type_ = type_.decode()
 
-    if expected is not None and type_ != expected:
-        raise ValueError(f"Expected {expected}, got {type_}")
+    if expected is not None:
+        if type_ != expected:
+            raise ValueError(f"Expected {expected}, got {type_}")
     return content

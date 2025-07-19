@@ -29,9 +29,9 @@ def parse_args():
     hash_object_parser.add_argument("file")
 
     # cat-file parser
-    hash_object_parser = commands.add_parser("cat-file")
-    hash_object_parser.set_defaults(func=cat_file)
-    hash_object_parser.add_argument("object", type=oid)
+    cat_file_object_parser = commands.add_parser("cat-file")
+    cat_file_object_parser.set_defaults(func=cat_file)
+    cat_file_object_parser.add_argument("object", type=oid)
 
     # write-tree parser
     write_tree_parser = commands.add_parser("write-tree")
@@ -133,8 +133,6 @@ def tag(args):
 
 
 def branch(args):
-    base.create_branch(args.name, args.start_point)
-    print(f"Branch {args.name} created at {args.start_point[:10]}")
     if not args.name:
         current = base.get_branch_name()
         for branch in base.iter_branch_names():
@@ -146,7 +144,7 @@ def branch(args):
 
 
 def k(args):
-    dot = "digraph commits{\n"
+    dot = "digraph commits {\n"
     oids = set()
     for refname, ref in data.iter_refs(deref=False):
         dot += f'"{refname}"[shape=note]\n'

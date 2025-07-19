@@ -26,10 +26,8 @@ def write_tree(directory="."):
             elif entry.is_dir(follow_symlinks=False):
                 type_ = "tree"
                 oid = write_tree(full)
-            else:
-                continue
             entries.append((entry.name, oid, type_))
-    tree = "".join((f"{type_} {oid} {name}\n" for name, oid, type_ in sorted(entries)))
+    tree = "".join(f"{type_} {oid} {name}\n" for name, oid, type_ in sorted(entries))
     return data.hash_object(tree.encode(), "tree")
 
 
@@ -60,12 +58,12 @@ def get_tree(oid, base_path=""):
 def _empty_current_directory():
     for root, dirnames, filenames in os.walk(".", topdown=False):
         for filename in filenames:
-            path = os.path.realpath(f"{root}/{filename}")
+            path = os.path.relpath(f"{root}/{filename}")
             if is_ignored(path) or not os.path.isfile(path):
                 continue
             os.remove(path)
         for dirname in dirnames:
-            path = os.path.realpath(f"{root}/{dirname}")
+            path = os.path.relpath(f"{root}/{dirname}")
             if is_ignored(path):
                 continue
             try:
@@ -99,7 +97,6 @@ def checkout(name):
     oid = get_oid(name)
     commit = get_commit(oid)
     read_tree(commit.tree)
-    data.update_ref("HEAD", data.RefValue(symbolic=False, value=oid))
     if is_branch(name):
         head = data.RefValue(symbolic=True, value=f"refs/heads/{name}")
     else:
@@ -130,7 +127,7 @@ def create_tag(name, oid):
 
 
 def create_branch(name, oid):
-    data.update_ref(f"refs/tags/{name}", data.RefValue(symbolic=False, value=oid))
+    data.update_ref(f"refs/heads/{name}", data.RefValue(symbolic=False, value=oid))
 
 
 def iter_branch_names():
@@ -143,7 +140,6 @@ Commit = namedtuple("Commit", ["tree", "parent", "message"])
 
 def get_commit(oid):
     parent = None
-    tree = None
     commit = data.get_object(oid, "commit").decode()
     lines = iter(commit.splitlines())
     for line in itertools.takewhile(operator.truth, lines):
@@ -181,12 +177,12 @@ def get_oid(name):
         f"refs/heads/{name}",
     ]
     for ref in refs_to_try:
-        ref_data = data.get_ref(ref, deref=False).value
-        if ref_data:
-            return ref_data
+        if data.get_ref(ref, deref=False).value:
+            return data.get_ref(ref).value
     is_hex = all(c in string.hexdigits for c in name)
     if len(name) == 40 and is_hex:
         return name
+    raise ValueError(f"Unknown name {name}")
 
 
 def is_ignored(path):
