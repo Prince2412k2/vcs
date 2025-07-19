@@ -1,17 +1,34 @@
+from functools import lru_cache
 import os
 import hashlib
 from collections import namedtuple
 
-VCS_DIR = ".vcs"
+global VCS_DIR
+
+
+def get_vcs_dir():
+    current_path = os.getcwd()
+    home_dir = os.path.expanduser("~")
+    while True:
+        if ".vcs" in os.listdir(current_path):
+            return os.path.join(current_path, ".vcs")
+
+        current_path = os.path.dirname(current_path)
+        if current_path == home_dir:
+            break
 
 
 def init():
-    if os.path.exists(VCS_DIR):
+    global VCS_DIR
+    if os.path.exists(".vcs"):
         print("VCS already initialized")
         return
-    os.makedirs(VCS_DIR)
-    os.makedirs(os.path.join(VCS_DIR, "objects"))
+    os.makedirs(".vcs")
+    os.makedirs(os.path.join(".vcs", "objects"))
+    VCS_DIR = ".vcs"
 
+
+VCS_DIR = get_vcs_dir()
 
 RefValue = namedtuple("RefValue", ["symbolic", "value"])
 
@@ -41,7 +58,7 @@ def _get_ref_internal(ref, deref):
         with open(ref_path) as f:
             value = f.read().strip()
     symbolic = bool(value) and value.startswith("ref:")
-    if symbolic:
+    if symbolic and value:
         value = value.split(":", 1)[1].strip()
         if deref:
             return _get_ref_internal(value, deref=True)

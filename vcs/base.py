@@ -12,7 +12,7 @@ def init():
     data.update_ref("HEAD", data.RefValue(symbolic=True, value="refs/heads/master"))
 
 
-def write_tree(directory="."):
+def write_tree(directory=os.path.dirname(data.VCS_DIR)):
     entries = []
     with os.scandir(directory) as it:
         for entry in it:
@@ -26,6 +26,8 @@ def write_tree(directory="."):
             elif entry.is_dir(follow_symlinks=False):
                 type_ = "tree"
                 oid = write_tree(full)
+            else:
+                continue
             entries.append((entry.name, oid, type_))
     tree = "".join(f"{type_} {oid} {name}\n" for name, oid, type_ in sorted(entries))
     return data.hash_object(tree.encode(), "tree")
@@ -140,6 +142,7 @@ Commit = namedtuple("Commit", ["tree", "parent", "message"])
 
 def get_commit(oid):
     parent = None
+    tree = None
     commit = data.get_object(oid, "commit").decode()
     lines = iter(commit.splitlines())
     for line in itertools.takewhile(operator.truth, lines):
