@@ -59,6 +59,11 @@ def parse_args():
     show_parser.set_defaults(func=show)
     show_parser.add_argument("oid", default="@", type=oid, nargs="?")
 
+    # diff parser
+    diff_parser = commands.add_parser("diff")
+    diff_parser.set_defaults(func=_diff)
+    diff_parser.add_argument("commit", default="@", type=oid, nargs="?")
+
     # checkout parser
     checkout_parser = commands.add_parser("checkout")
     checkout_parser.set_defaults(func=checkout)
@@ -104,7 +109,9 @@ def hash_object(args):
 
 def cat_file(args):
     sys.stdout.flush()
-    sys.stdout.buffer.write(data.get_object(args.object, expected=None))
+    sys.stdout.buffer.write(
+        data.get_object(args.object, expected=None)  # pyright: ignore
+    )
 
 
 def write_tree(args):
@@ -119,9 +126,15 @@ def commit(args):
     print(base.commit(args.message))
 
 
+def print_line(color="\033[94m", len=50):
+    print(color, end="")
+    print("-" * len)
+    print("\033[0m", end="")
+
+
 def _print_commit(oid, commit, refs=None):
-    refs_str = f"({', '.join(refs)})" if refs else ""
-    print(f"commit {oid}{refs_str}\n")
+    refs_str = f"(\033[96m{', '.join(refs)}\033[93m)\033[0m" if refs else ""
+    print(f"\033[93mcommit {oid}{refs_str}\033[0m\n")
     print(textwrap.indent(commit.message, "    "))
     print("")
 
@@ -144,7 +157,15 @@ def show(args):
         parent_tree = base.get_commit(commit.parent).tree
     _print_commit(args.oid, commit)
     result = diff.diff_trees(base.get_tree(parent_tree), base.get_tree(commit.tree))
-    print(result)
+    sys.stdout.flush()
+    sys.stdout.buffer.write(result)
+
+
+def _diff(args):
+    tree = args.commit and base.get_commit(args.commit).tree
+    result = diff.diff_trees(base.get_tree(tree), base.get_working_tree())
+    sys.stdout.flush()
+    sys.stdout.buffer.write(result)
 
 
 def checkout(args):

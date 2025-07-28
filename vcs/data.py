@@ -6,34 +6,37 @@ from collections import namedtuple
 global VCS_DIR
 
 
-def get_vcs_dir():
+def set_vcs_dir():
+    global VCS_DIR
     current_path = os.getcwd()
     home_dir = os.path.expanduser("~")
     while True:
         if ".vcs" in os.listdir(current_path):
-            return os.path.join(current_path, ".vcs")
-
+            VCS_DIR = os.path.join(current_path, ".vcs")
+            return
         current_path = os.path.dirname(current_path)
         if current_path == home_dir:
             break
+    print("'.vcs' not found make sure you have initialized a vcs repo")
 
 
 def init():
     global VCS_DIR
+    VCS_DIR = ".vcs"
     if os.path.exists(".vcs"):
         print("VCS already initialized")
         return
     os.makedirs(".vcs")
     os.makedirs(os.path.join(".vcs", "objects"))
-    VCS_DIR = ".vcs"
 
 
-VCS_DIR = get_vcs_dir()
+set_vcs_dir()
 
 RefValue = namedtuple("RefValue", ["symbolic", "value"])
 
 
 def update_ref(ref, value, deref=True):
+    global VCS_DIR
     ref = _get_ref_internal(ref, deref)[0]
     if not value.value:
         raise ValueError
@@ -52,6 +55,7 @@ def get_ref(ref, deref=True):
 
 
 def _get_ref_internal(ref, deref):
+    global VCS_DIR
     ref_path = f"{VCS_DIR}/{ref}"
     value = None
     if os.path.isfile(ref_path):

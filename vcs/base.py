@@ -12,7 +12,9 @@ def init():
     data.update_ref("HEAD", data.RefValue(symbolic=True, value="refs/heads/master"))
 
 
-def write_tree(directory=os.path.dirname(data.VCS_DIR)):
+def write_tree(directory="."):
+    if directory == ".":
+        directory = os.path.dirname(data.VCS_DIR)
     entries = []
     with os.scandir(directory) as it:
         for entry in it:
@@ -54,6 +56,18 @@ def get_tree(oid, base_path=""):
             result.update(get_tree(oid, f"{path}/"))
         else:
             raise ValueError(f"Unknown tree entry {type_}")
+    return result
+
+
+def get_working_tree():
+    result = {}
+    for root, _, filenames in os.walk(os.path.dirname(data.VCS_DIR)):
+        for filename in filenames:
+            path = os.path.relpath(f"{root}/{filename}")
+            if is_ignored(path) or not os.path.isfile(path):
+                continue
+            with open(path, "rb") as f:
+                result[path] = data.hash_object(f.read())
     return result
 
 
