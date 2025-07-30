@@ -8,6 +8,12 @@ from . import data
 from . import diff
 
 
+def close():
+    if not data.IS_INIT:
+        print("")
+        exit(0)
+
+
 def init():
     data.init()
     data.update_ref("HEAD", data.RefValue(symbolic=True, value="refs/heads/master"))
@@ -214,6 +220,7 @@ def iter_commits_and_parents(oids):
 
 
 def get_oid(name):
+    close()
     if name == "@":
         name = "HEAD"
     refs_to_try = [

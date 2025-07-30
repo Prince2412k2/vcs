@@ -3,11 +3,12 @@ import os
 import hashlib
 from collections import namedtuple
 
-global VCS_DIR
+global VCS_DIR, IS_INIT
+IS_INIT = True
 
 
 def set_vcs_dir():
-    global VCS_DIR
+    global VCS_DIR, IS_INIT
     current_path = os.getcwd()
     home_dir = os.path.expanduser("~")
     while True:
@@ -17,7 +18,8 @@ def set_vcs_dir():
         current_path = os.path.dirname(current_path)
         if current_path == home_dir:
             break
-    print("'.vcs' not found make sure you have initialized a vcs repo")
+    print("'.vcs' not found make sure you have initialized a vcs repo", end="")
+    IS_INIT = False
 
 
 def init():

@@ -53,6 +53,9 @@ def parse_args():
     log_parser = commands.add_parser("log")
     log_parser.set_defaults(func=log)
     log_parser.add_argument("oid", default="@", type=oid, nargs="?")
+    log_parser.add_argument(
+        "--oneline", action="store_true", help="Show log in one-line format"
+    )
 
     # show parser
     show_parser = commands.add_parser("show")
@@ -110,6 +113,8 @@ def parse_args():
 
 def init(args):
     base.init()
+    sys.stdout.write("\033[2K\r")
+    sys.stdout.flush()
     print(f"initialized vcs repo at {os.getcwd()}/{data.VCS_DIR}")
 
 
@@ -150,13 +155,22 @@ def _print_commit(oid, commit, refs=None):
     print("")
 
 
+def _print_commit_oneline(oid, commit, refs=None):
+    refs_str = f"(\033[96m{', '.join(refs)}\033[93m)\033[0m" if refs else ""
+    print(f"\033[93m{oid}{refs_str}\033[0m - ", end="")
+    print(textwrap.indent(commit.message, " "), end="")
+    print("")
+
+
 def log(args):
+    print_commit_func = _print_commit_oneline if args.oneline else _print_commit
+
     refs = {}
     for refname, ref in data.iter_refs():
         refs.setdefault(ref.value, []).append(refname)
     for oid in base.iter_commits_and_parents({args.oid}):
         commit = base.get_commit(oid)
-        _print_commit(oid, commit, refs.get(oid))
+        print_commit_func(oid, commit, refs.get(oid))
 
 
 def show(args):
