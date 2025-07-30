@@ -54,6 +54,11 @@ def get_ref(ref, deref=True):
     return _get_ref_internal(ref, deref)[1]
 
 
+def delete_ref(ref, deref=True):
+    ref = _get_ref_internal(ref, deref)[0]
+    os.remove(f"{VCS_DIR}/{ref}")
+
+
 def _get_ref_internal(ref, deref):
     global VCS_DIR
     ref_path = f"{VCS_DIR}/{ref}"
@@ -70,14 +75,16 @@ def _get_ref_internal(ref, deref):
 
 
 def iter_refs(prefix="", deref=True):
-    refs = ["HEAD"]
+    refs = ["HEAD", "MERGE_HEAD"]
     for root, _, filenames in os.walk(f"{VCS_DIR}/refs/"):
         root = os.path.relpath(root, VCS_DIR)
         refs.extend(f"{root}/{name}" for name in filenames)
     for refname in refs:
         if not refname.startswith(prefix):
             continue
-        yield refname, get_ref(refname, deref=deref)
+        ref = get_ref(refname, deref=deref)
+        if ref.value:
+            yield refname, ref
 
 
 def hash_object(data: bytes, type_="blob") -> str:

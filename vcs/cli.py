@@ -94,6 +94,17 @@ def parse_args():
     reset_parser.set_defaults(func=reset)
     reset_parser.add_argument("commit", type=oid)
 
+    # merge parser
+    merge_parser = commands.add_parser("merge")
+    merge_parser.set_defaults(func=merge)
+    merge_parser.add_argument("commit", type=oid)
+
+    # merge_base parser
+    merge_base_parser = commands.add_parser("merge-base")
+    merge_base_parser.set_defaults(func=merge_base)
+    merge_base_parser.add_argument("commit1", type=oid)
+    merge_base_parser.add_argument("commit2", type=oid)
+
     return parser.parse_args()
 
 
@@ -153,8 +164,8 @@ def show(args):
         return
     commit = base.get_commit(args.oid)
     parent_tree = None
-    if commit.parent:
-        parent_tree = base.get_commit(commit.parent).tree
+    if commit.parents:
+        parent_tree = base.get_commit(commit.parents[0]).tree
     _print_commit(args.oid, commit)
     result = diff.diff_trees(base.get_tree(parent_tree), base.get_tree(commit.tree))
     sys.stdout.flush()
@@ -200,8 +211,8 @@ def k(args):
         dot += (
             f'"{oid}" [shape=box style=filled label="{oid[:10]}\n{commit.message}"]\n'
         )
-        if commit.parent:
-            dot += f'"{oid}" -> "{commit.parent}"\n'
+        for parent in commit.parents:
+            dot += f'"{oid}" -> "{parent}"\n'
     dot += "}"
 
     with subprocess.Popen(
@@ -219,6 +230,29 @@ def status(args):
         assert head
         print(f"HEAD detached at {head[:10]}")
 
+    merge_head = data.get_ref("merge_head").value
+    if merge_head:
+        print(f"Merging with {merge_head[:10]}")
+
+    print("\nChanges to be commited:\n")
+    head_tree = head and base.get_commit(head).tree
+
+    print("\033[91m", end="")  # for red color
+    for path, action in diff.iter_changed_files(
+        base.get_tree(head_tree), base.get_working_tree()
+    ):
+        print(f"    {action:.12}:  {path}")
+
+    print("\033[0m", end="")  # for red color
+
 
 def reset(args):
     base.reset(args.commit)
+
+
+def merge(args):
+    base.merge(args.commit)
+
+
+def merge_base(args):
+    print(base.get_merge_base(args.commit1, args.commit2))
